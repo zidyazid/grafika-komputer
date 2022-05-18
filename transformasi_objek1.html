@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        #kanvas-grafkom {
+            border: 2px solid black;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="kanvas-grafkom" width="600" height="600"></canvas>
+    <script>
+        var kanvasPratikum;
+        kanvasPratikum = document.querySelector("#kanvas-grafkom");
+
+        var ctx;
+        ctx = kanvasPratikum.getContext("2d");
+        var imageDataPratikum = ctx.getImageData(0, 0, kanvasPratikum.width, kanvasPratikum.height);
+
+        //Fungsi Titik dan Garis
+        function gambarTitik(imageDataTemp, x, y, r, g, b, a) {
+
+            var index;
+            index = 4 * (Math.ceil(x) + (Math.ceil(y) * kanvasPratikum.width));
+            imageDataTemp.data[index] = r;
+            imageDataTemp.data[index + 1] = g;
+            imageDataTemp.data[index + 2] = b;
+            imageDataTemp.data[index + 3] = 255;
+        }
+
+        //Fungsi Algoritma DDA
+        function a_dda(imageData, x1, y1, x2, y2, r, g, b) {
+            var dx = x2 - x1;
+            var dy = y2 - y1;
+
+            if (Math.abs(dx) > Math.abs(dy)) {
+                if (x2 > x1) {
+                    var y = y1;
+                    for (var x = x1; x < x2; x++) {
+                        y = y + dy / Math.abs(dx);
+                        gambarTitik(imageData, x, y, r, g, b);
+                    }
+                } else {
+                    var y = y1;
+                    for (var x = x1; x > x2; x--) {
+                        y = y + dy / Math.abs(dx);
+                        gambarTitik(imageData, x, y, r, g, b);
+                    }
+                }
+            } else {
+                if (y2 > y1) {
+                    var x = x1;
+                    for (var y = y1; y < y2; y++) {
+                        x = x + dx / Math.abs(dy);
+                        gambarTitik(imageData, x, y, r, g, b);
+                    }
+                } else {
+                    var x = x1;
+                    for (var y = y1; y > y2; y--) {
+                        x = x + dx / Math.abs(dy);
+                        gambarTitik(imageData, x, y, r, g, b);
+                    }
+                }
+            }
+        }
+
+        //Fungsi Lingkaran
+        function gbr_lingkaran(imageDataTemp, xc, yc, radius, r, g, b) {
+
+            for (var x = xc - radius; x < xc + radius; x++) {
+                // akar dari : r2 + (x - xc)2
+                var y = yc + Math.sqrt(Math.pow(radius, 2) - Math.pow((x - xc), 2));
+                gambarTitik(imageDataTemp, Math.ceil(x), Math.ceil(y), r, g, b);
+                // akar dari : r2 - (x - xc)2
+                var y = yc - Math.sqrt(Math.pow(radius, 2) - Math.pow((x - xc), 2));
+                gambarTitik(imageDataTemp, Math.ceil(x), Math.ceil(y), r, g, b);
+            }
+
+            for (var x = xc - radius; x < xc + radius; x++) {
+                // akar dari : r2 + (y - xc)2
+                var y = yc + Math.sqrt(Math.pow(radius, 2) - Math.pow((x - xc), 2));
+                gambarTitik(imageDataTemp, Math.ceil(y), Math.ceil(x), r, g, b);
+                // akar dari : r2 - (y - xc)2
+                var y = yc - Math.sqrt(Math.pow(radius, 2) - Math.pow((x - xc), 2));
+                gambarTitik(imageDataTemp, Math.ceil(y), Math.ceil(x), r, g, b);
+            }
+        }
+
+        function lingkaran_polar(imageDataTemp, xc, yc, radius, r, g, b) {
+            for (let theta = 0; theta < Math.PI * 2; theta += 0.01) {
+                x = xc + radius * Math.cos(theta);
+                y = yc + radius * Math.sin(theta);
+                gambarTitik(imageDataPratikum, Math.ceil(x), Math.ceil(y), r, g, b);
+            }
+        }
+        //Fungsi Polygon
+        function polygon(imageData, point_array, r, g, b) {
+            var point = point_array[0];
+
+            for (var i = 1; i < point_array.length; i++) {
+                var point_2 = point_array[i];
+
+                a_dda(imageData, point.x, point.y, point_2.x, point_2.y, r, g, b);
+                point = point_2;
+            }
+            a_dda(imageData, point.x, point.y, point_array[0].x, point_array[0].y, r, g, b);
+        }
+
+        //Fungsi Algoritma FloodFill Ke I
+        function floodfill(imageData, canvas, x, y, toFlood, color) {
+            var index = 4 * (x + y * canvas.width);
+            var r1 = imageData.data[index];
+            var g1 = imageData.data[index + 1];
+            var b1 = imageData.data[index + 2];
+
+            if ((r1 == toFlood.r) && (g1 == toFlood.g) && (b1 == toFlood.b)) {
+                imageData.data[index] = color.r;
+                imageData.data[index + 1] = color.g;
+                imageData.data[index + 2] = color.b;
+                imageData.data[index + 3] = 255;
+
+                floodfill(imageData, kanvasPratikum, x + 1, y, toFlood, color);
+                floodfill(imageData, kanvasPratikum, x, y + 1, toFlood, color);
+                floodfill(imageData, kanvasPratikum, x - 1, y, toFlood, color);
+                floodfill(imageData, kanvasPratikum, x, y - 1, toFlood, color);
+
+            }
+        }
+
+        // Fungsi Algoritma FloodFill Ke II
+        function floodfillStack(imageData, canvas, x1, y1, toFlood, color) {
+            var Stack = [];
+            Stack.push({
+                x: x1,
+                y: y1
+            });
+
+            while (Stack.length > 0) {
+                var titik_now = Stack.pop();
+                var index_now = 4 * (titik_now.x + titik_now.y * canvas.width);
+
+                var r1 = imageData.data[index_now];
+                var g1 = imageData.data[index_now + 1];
+                var b1 = imageData.data[index_now + 2];
+
+                if ((r1 == toFlood.r) && (g1 == toFlood.g) && (b1 == toFlood.b)) {
+                    imageData.data[index_now] = color.r;
+                    imageData.data[index_now + 1] = color.g;
+                    imageData.data[index_now + 2] = color.b;
+                    imageData.data[index_now + 3] = 255;
+
+                    Stack.push({
+                        x: titik_now.x + 1,
+                        y: titik_now.y
+                    });
+                    Stack.push({
+                        x: titik_now.x - 1,
+                        y: titik_now.y
+                    });
+                    Stack.push({
+                        x: titik_now.x,
+                        y: titik_now.y + 1
+                    });
+                    Stack.push({
+                        x: titik_now.x,
+                        y: titik_now.y - 1
+                    });
+                }
+            }
+        }
+
+        /*
+            1. TRANSLASI
+            melakukan proses pemindahan titik kordinat pada segitiga pertama 
+            dengan menaikan nilai dari titik x pada kordinat awal
+            dengan menggunakan fungsi translasi
+        */
+
+        function translasi(titik_lama, T) {
+            var x_baru = titik_lama.x + T.x;
+            var y_baru = titik_lama.y + T.y;
+
+            return {
+                x: x_baru,
+                y: y_baru
+            };
+        }
+
+        var segitiga = [{
+                x: 200,
+                y: 150
+            },
+            {
+                x: 250,
+                y: 200
+            },
+            {
+                x: 150,
+                y: 200
+            },
+        ];
+        polygon(imageDataPratikum, segitiga, 255, 0, 0);
+
+        var segitiga_translasi = [];
+        var temp = translasi(segitiga[0], {
+            x: 100,
+            y: 0
+        })
+        segitiga_translasi.push(temp);
+        temp = translasi(segitiga[1], {
+            x: 100,
+            y: 0
+        })
+        segitiga_translasi.push(temp);
+        temp = translasi(segitiga[2], {
+            x: 100,
+            y: 0
+        })
+        segitiga_translasi.push(temp);
+
+        polygon(imageDataPratikum, segitiga_translasi, 255, 0, 255);
+
+        /*
+            2. SKALA
+            merubah ukuran dari suatu objek
+        */
+
+        function skala(titik_lama, S) {
+            var x_baru = titik_lama.x * S.x;
+            var y_baru = titik_lama.y * S.y;
+
+            return {
+                x: x_baru,
+                y: y_baru
+            }
+        }
+
+        function skala_fix_point(titik_lama, titik_perputaran, S) {
+            var p1 = translasi(titik_lama, {
+                x: -titik_perputaran.x,
+                y: -titik_perputaran.y
+            })
+            var p2 = skala(p1, S);
+            var p3 = translasi(p2, titik_perputaran);
+
+            return p3;
+        }
+
+        var segitiga_skala = [];
+        var temp = skala(segitiga[0], {
+            x: 2,
+            y: 2
+        });
+        segitiga_skala.push(temp);
+        temp = skala(segitiga[1], {
+            x: 2,
+            y: 2
+        });
+        segitiga_skala.push(temp);
+        temp = skala(segitiga[2], {
+            x: 2,
+            y: 2
+        });
+        segitiga_skala.push(temp);
+
+        polygon(imageDataPratikum, segitiga_skala, 255, 0, 255);
+
+        // var segitiga_skala = [];
+        // var temp = skala_fix_point(segitiga[0], {
+        //     x: 150,
+        //     y: 200
+        // }, {
+        //     x: 2,
+        //     y: 2
+        // })
+        // segitiga_skala.push(temp);
+        // temp = skala_fix_point(segitiga[1], {
+        //     x: 150,
+        //     y: 200
+        // }, {
+        //     x: 2,
+        //     y: 2
+        // })
+        // segitiga_skala.push(temp);
+        // temp = skala_fix_point(segitiga[2], {
+        //     x: 150,
+        //     y: 200
+        // }, {
+        //     x: 2,
+        //     y: 2
+        // })
+        // segitiga_skala.push(temp);
+
+        // polygon(imageDataPratikum, segitiga_skala, 255, 0, 255);
+
+
+        /*
+            3. ROTASI
+            memutar sudut suatu objek
+
+            a. rotasi
+            b. rotasi fix point
+
+            persamaan : X' = x.cos(t) - y.sin(t)
+            persamaan : Y' = x.sin(t) + y.cos(t)
+        */
+
+        function rotasi(titik_lama, sudut) {
+            var x_baru = titik_lama.x * Math.cos(sudut) - titik_lama.y * Math.sin(sudut);
+            var y_baru = titik_lama.x * Math.sin(sudut) + titik_lama.y * Math.cos(sudut);
+
+            return {
+                x: x_baru,
+                y: y_baru
+            };
+        }
+
+        // var segitiga_rotasi = [];
+        // var temp = rotasi(segitiga[0], Math.PI / 8)
+        // segitiga_rotasi.push(temp);
+        // temp = rotasi(segitiga[1], Math.PI / 8)
+        // segitiga_rotasi.push(temp);
+        // temp = rotasi(segitiga[2], Math.PI / 8)
+        // segitiga_rotasi.push(temp);
+
+        // polygon(imageDataPratikum, segitiga_rotasi, 0, 0, 255);
+
+        function rotasi_fix_point(titik_lama, titik_perputaran, sudut) {
+            var p1 = translasi(titik_lama, {
+                x: -titik_perputaran.x,
+                y: -titik_perputaran.y
+            })
+            var p2 = rotasi(p1, sudut);
+            var p3 = translasi(p2, titik_perputaran);
+
+            return p3;
+        }
+
+        // var segitiga_rotasi = [];
+        // var temp = rotasi_fix_point(segitiga[0], {
+        //     x: 150,
+        //     y: 200
+        // }, Math.PI / 5)
+        // segitiga_rotasi.push(temp);
+        // temp = rotasi_fix_point(segitiga[1], {
+        //     x: 150,
+        //     y: 200
+        // }, Math.PI / 5)
+        // segitiga_rotasi.push(temp);
+        // temp = rotasi_fix_point(segitiga[2], {
+        //     x: 150,
+        //     y: 200
+        // }, Math.PI / 5)
+        // segitiga_rotasi.push(temp);
+
+        // polygon(imageDataPratikum, segitiga_rotasi, 0, 0, 255);
+
+
+        /*
+            4. TRANSLASI, SKALA, dan ROTASI DENGAN ARRAY
+        */
+
+        function translasi_array(titik_array, T) {
+            var array_hasil = [];
+
+            for (var i = 0; i < titik_array.length; i++) {
+                var temp = translasi(titik_array[i], T);
+                array_hasil.push(temp);
+            }
+
+            return array_hasil;
+        }
+
+        function rotasi_array(titik_array, titik_perputaran, sudut) {
+            var array_hasil = [];
+
+            for (var i = 0; i < titik_array.length; i++) {
+                var temp = rotasi_fix_point(titik_array[i], titik_perputaran, sudut);
+                array_hasil.push(temp);
+            }
+
+            return array_hasil;
+        }
+
+        function skala_array(titik_array, titik_perputaran, S) {
+            var array_hasil = [];
+
+            for (var i = 0; i < titik_array.length; i++) {
+                var temp = skala_fix_point(titik_array[i], titik_perputaran, S);
+                array_hasil.push(temp);
+            }
+
+            return array_hasil;
+        }
+
+        // var segitiga_translasi_array = translasi_array(segitiga, {
+        //     x: 100,
+        //     y: 100
+        // })
+        // polygon(imageDataPratikum, segitiga_translasi_array, 0, 255, 0);
+
+        // var segitiga_rotasi_array = rotasi_array(segitiga, {
+        //     x: 150,
+        //     y: 200
+        // }, Math.PI / 7)
+        // polygon(imageDataPratikum, segitiga_rotasi_array, 0, 0, 255);
+
+        // var segitiga_skala_array = skala_array(segitiga, {
+        //     x: 150,
+        //     y: 200
+        // }, {
+        //     x: 2,
+        //     y: 2
+        // })
+        // polygon(imageDataPratikum, segitiga_skala_array, 0, 255, 0);
+
+        ctx.putImageData(imageDataPratikum, 0, 0);
+    </script>
+</body>
+
+</html>
