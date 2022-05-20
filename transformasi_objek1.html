@@ -178,7 +178,7 @@
         /*
             1. TRANSLASI
             melakukan proses pemindahan titik kordinat pada segitiga pertama 
-            dengan menaikan nilai dari titik x pada kordinat awal
+            dengan menaikan nilai pada titik x/y pada kordinat awal
             dengan menggunakan fungsi translasi
         */
 
@@ -209,18 +209,18 @@
 
         var segitiga_translasi = [];
         var temp = translasi(segitiga[0], {
-            x: 100,
-            y: 0
+            x: 0,
+            y: 100
         })
         segitiga_translasi.push(temp);
         temp = translasi(segitiga[1], {
-            x: 100,
-            y: 0
+            x: 0,
+            y: 100
         })
         segitiga_translasi.push(temp);
         temp = translasi(segitiga[2], {
-            x: 100,
-            y: 0
+            x: 0,
+            y: 100
         })
         segitiga_translasi.push(temp);
 
@@ -321,15 +321,15 @@
             };
         }
 
-        // var segitiga_rotasi = [];
-        // var temp = rotasi(segitiga[0], Math.PI / 8)
-        // segitiga_rotasi.push(temp);
-        // temp = rotasi(segitiga[1], Math.PI / 8)
-        // segitiga_rotasi.push(temp);
-        // temp = rotasi(segitiga[2], Math.PI / 8)
-        // segitiga_rotasi.push(temp);
+        var segitiga_rotasi = [];
+        var temp = rotasi(segitiga[0], Math.PI / 8)
+        segitiga_rotasi.push(temp);
+        temp = rotasi(segitiga[1], Math.PI / 8)
+        segitiga_rotasi.push(temp);
+        temp = rotasi(segitiga[2], Math.PI / 8)
+        segitiga_rotasi.push(temp);
 
-        // polygon(imageDataPratikum, segitiga_rotasi, 0, 0, 255);
+        polygon(imageDataPratikum, segitiga_rotasi, 0, 0, 255);
 
         function rotasi_fix_point(titik_lama, titik_perputaran, sudut) {
             var p1 = translasi(titik_lama, {
