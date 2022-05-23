@@ -192,48 +192,13 @@
             };
         }
 
-        var segitiga = [{
-                x: 200,
-                y: 150
-            },
-            {
-                x: 250,
-                y: 200
-            },
-            {
-                x: 150,
-                y: 200
-            },
-        ];
-        polygon(imageDataPratikum, segitiga, 255, 0, 0);
+        /**
+         * TRANSFORMASI KOMPOSIT
+         */
 
-        var segitiga_translasi = [];
-        var temp = translasi(segitiga[0], {
-            x: 0,
-            y: 100
-        })
-        segitiga_translasi.push(temp);
-        temp = translasi(segitiga[1], {
-            x: 0,
-            y: 100
-        })
-        segitiga_translasi.push(temp);
-        temp = translasi(segitiga[2], {
-            x: 0,
-            y: 100
-        })
-        segitiga_translasi.push(temp);
-
-        polygon(imageDataPratikum, segitiga_translasi, 255, 0, 255);
-
-        /*
-            2. SKALA
-            merubah ukuran dari suatu objek
-        */
-
-        function skala(titik_lama, S) {
-            var x_baru = titik_lama.x * S.x;
-            var y_baru = titik_lama.y * S.y;
+        function transfrom_titik(titik_lama, m) {
+            var x_baru = m[0][0] * titik_lama.x + m[0][1] * titik_lama.y + m[0][2] * 1;
+            var y_baru = m[1][0] * titik_lama.x + m[1][1] * titik_lama.y + m[1][2] * 1;
 
             return {
                 x: x_baru,
@@ -241,35 +206,184 @@
             }
         }
 
-        function skala_fix_point(titik_lama, titik_perputaran, S) {
-            var p1 = translasi(titik_lama, {
-                x: -titik_perputaran.x,
-                y: -titik_perputaran.y
-            })
-            var p2 = skala(p1, S);
-            var p3 = translasi(p2, titik_perputaran);
+        function transform_array(array_titik, m) {
+            var hasil = [];
 
-            return p3;
+            for (let i = 0; i < array_titik.length; i++) {
+                var titik_hasil;
+                titik_hasil = transfrom_titik(array_titik[i], m);
+                hasil.push(titik_hasil);
+            }
+
+            return hasil;
         }
 
-        var segitiga_skala = [];
-        var temp = skala(segitiga[0], {
-            x: 2,
-            y: 2
-        });
-        segitiga_skala.push(temp);
-        temp = skala(segitiga[1], {
-            x: 2,
-            y: 2
-        });
-        segitiga_skala.push(temp);
-        temp = skala(segitiga[2], {
-            x: 2,
-            y: 2
-        });
-        segitiga_skala.push(temp);
+        function createIdentity() {
+            var identitas = [
+                [1, 0, 0],
+                [0, 1, 0],
+                [0, 0, 1],
+            ];
+            return identitas;
+        }
 
-        polygon(imageDataPratikum, segitiga_skala, 255, 0, 255);
+        function multiplyMatrix(m1, m2) {
+            var hasil = [
+                [0, 0, 0],
+                [0, 0, 0],
+                [0, 0, 0]
+            ];
+
+            for (var i = 0; i < 3; i++) {
+                for (var j = 0; j < 3; j++) {
+                    for (var k = 0; k < 3; k++) {
+                        hasil[i][k] += m1[i][j] * m2[j][k];
+                    }
+                }
+            }
+            return hasil;
+        }
+
+        function createTranslation(Tx, Ty) {
+            var translation = [
+                [1, 0, Tx],
+                [0, 1, Ty],
+                [0, 0, 1]
+            ]
+            return translation;
+        }
+
+        function createSkala(Sx, Sy) {
+            var skala = [
+                [Sx, 0, 0],
+                [0, Sy, 0],
+                [0, 0, 1]
+            ]
+            return skala;
+        }
+
+        function createRotasi(theta) {
+            var rotasi = [
+                [Math.cos(theta), -Math.sin(theta), 0],
+                [Math.sin(theta), Math.cos(theta), 0],
+                [0, 0, 1]
+            ]
+            return rotasi;
+        }
+
+        function rotation_fp(xc, yc, theta) {
+            var m1 = createTranslation(-xc, -yc);
+            var m2 = createRotasi(theta);
+            var m3 = createTranslation(xc, yc);
+
+            var hasil;
+            hasil = multiplyMatrix(m3, m2);
+            hasil = multiplyMatrix(hasil, m1);
+            return hasil;
+        }
+
+        function skala_fp(xc, yc, Sx, Sy) {
+            var m1 = createTranslation(-xc, -yc);
+            var m2 = createSkala(Sx, Sy);
+            var m3 = createTranslation(xc, yc);
+
+            var hasil;
+            hasil = multiplyMatrix(m3, m2);
+            hasil = multiplyMatrix(hasil, m1);
+            return hasil;
+        }
+
+        var segitiga = [{
+                x: 100,
+                y: 100
+            },
+            {
+                x: 150,
+                y: 150
+            },
+            {
+                x: 50,
+                y: 150
+            },
+        ];
+        polygon(imageDataPratikum, segitiga, 255, 0, 0);
+
+        var m = rotation_fp(150, 150, Math.PI / 7);
+        var p_array2 = transform_array(segitiga, m);
+        polygon(imageDataPratikum, p_array2, 0, 255, 0);
+
+        // m = multiplyMatrix(m, m);
+        // p_array2 = transform_array(segitiga, m);
+        // polygon(imageDataPratikum, p_array2, 0, 0, 255);
+
+        // m = skala_fp(150, 150, 1.5, 1.5);
+        // p_array2 = transform_array(segitiga, m);
+        // polygon(imageDataPratikum, p_array2, 0, 0, 255);
+
+
+        // var segitiga_translasi = [];
+        // var temp = translasi(segitiga[0], {
+        //     x: 100,
+        //     y: 0
+        // })
+        // segitiga_translasi.push(temp);
+        // temp = translasi(segitiga[1], {
+        //     x: 100,
+        //     y: 0
+        // })
+        // segitiga_translasi.push(temp);
+        // temp = translasi(segitiga[2], {
+        //     x: 100,
+        //     y: 0
+        // })
+        // segitiga_translasi.push(temp);
+
+        // polygon(imageDataPratikum, segitiga_translasi, 255, 0, 255);
+
+        /*
+            2. SKALA
+            merubah ukuran dari suatu objek
+        */
+
+        // function skala(titik_lama, S) {
+        //     var x_baru = titik_lama.x * S.x;
+        //     var y_baru = titik_lama.y * S.y;
+
+        //     return {
+        //         x: x_baru,
+        //         y: y_baru
+        //     }
+        // }
+
+        // function skala_fix_point(titik_lama, titik_skalasi, S) {
+        //     var p1 = translasi(titik_lama, {
+        //         x: -titik_skalasi.x,
+        //         y: -titik_skalasi.y
+        //     })
+        //     var p2 = skala(p1, S);
+        //     var p3 = translasi(p2, titik_skalasi);
+
+        //     return p3;
+        // }
+
+        // var segitiga_skala = [];
+        // var temp = skala(segitiga[0], {
+        //     x: 2,
+        //     y: 2
+        // });
+        // segitiga_skala.push(temp);
+        // temp = skala(segitiga[1], {
+        //     x: 2,
+        //     y: 2
+        // });
+        // segitiga_skala.push(temp);
+        // temp = skala(segitiga[2], {
+        //     x: 2,
+        //     y: 2
+        // });
+        // segitiga_skala.push(temp);
+
+        // polygon(imageDataPratikum, segitiga_skala, 255, 0, 255);
 
         // var segitiga_skala = [];
         // var temp = skala_fix_point(segitiga[0], {
@@ -311,52 +425,52 @@
             persamaan : Y' = x.sin(t) + y.cos(t)
         */
 
-        function rotasi(titik_lama, sudut) {
-            var x_baru = titik_lama.x * Math.cos(sudut) - titik_lama.y * Math.sin(sudut);
-            var y_baru = titik_lama.x * Math.sin(sudut) + titik_lama.y * Math.cos(sudut);
+        // function rotasi(titik_lama, sudut) {
+        //     var x_baru = titik_lama.x * Math.cos(sudut) - titik_lama.y * Math.sin(sudut);
+        //     var y_baru = titik_lama.x * Math.sin(sudut) + titik_lama.y * Math.cos(sudut);
 
-            return {
-                x: x_baru,
-                y: y_baru
-            };
-        }
+        //     return {
+        //         x: x_baru,
+        //         y: y_baru
+        //     };
+        // }
 
-        var segitiga_rotasi = [];
-        var temp = rotasi(segitiga[0], Math.PI / 8)
-        segitiga_rotasi.push(temp);
-        temp = rotasi(segitiga[1], Math.PI / 8)
-        segitiga_rotasi.push(temp);
-        temp = rotasi(segitiga[2], Math.PI / 8)
-        segitiga_rotasi.push(temp);
+        // var segitiga_rotasi = [];
+        // var temp = rotasi(segitiga[0], Math.PI / 8)
+        // segitiga_rotasi.push(temp);
+        // temp = rotasi(segitiga[1], Math.PI / 8)
+        // segitiga_rotasi.push(temp);
+        // temp = rotasi(segitiga[2], Math.PI / 8)
+        // segitiga_rotasi.push(temp);
 
-        polygon(imageDataPratikum, segitiga_rotasi, 0, 0, 255);
+        // polygon(imageDataPratikum, segitiga_rotasi, 0, 0, 255);
 
-        function rotasi_fix_point(titik_lama, titik_perputaran, sudut) {
-            var p1 = translasi(titik_lama, {
-                x: -titik_perputaran.x,
-                y: -titik_perputaran.y
-            })
-            var p2 = rotasi(p1, sudut);
-            var p3 = translasi(p2, titik_perputaran);
+        // function rotasi_fix_point(titik_lama, titik_perputaran, sudut) {
+        //     var p1 = translasi(titik_lama, {
+        //         x: -titik_perputaran.x,
+        //         y: -titik_perputaran.y
+        //     })
+        //     var p2 = rotasi(p1, sudut);
+        //     var p3 = translasi(p2, titik_perputaran);
 
-            return p3;
-        }
+        //     return p3;
+        // }
 
         // var segitiga_rotasi = [];
         // var temp = rotasi_fix_point(segitiga[0], {
         //     x: 150,
         //     y: 200
-        // }, Math.PI / 5)
+        // }, Math.PI / 15)
         // segitiga_rotasi.push(temp);
         // temp = rotasi_fix_point(segitiga[1], {
         //     x: 150,
         //     y: 200
-        // }, Math.PI / 5)
+        // }, Math.PI / 15)
         // segitiga_rotasi.push(temp);
         // temp = rotasi_fix_point(segitiga[2], {
         //     x: 150,
         //     y: 200
-        // }, Math.PI / 5)
+        // }, Math.PI / 15)
         // segitiga_rotasi.push(temp);
 
         // polygon(imageDataPratikum, segitiga_rotasi, 0, 0, 255);
@@ -366,38 +480,38 @@
             4. TRANSLASI, SKALA, dan ROTASI DENGAN ARRAY
         */
 
-        function translasi_array(titik_array, T) {
-            var array_hasil = [];
+        // function translasi_array(titik_array, T) {
+        //     var array_hasil = [];
 
-            for (var i = 0; i < titik_array.length; i++) {
-                var temp = translasi(titik_array[i], T);
-                array_hasil.push(temp);
-            }
+        //     for (var i = 0; i < titik_array.length; i++) {
+        //         var temp = translasi(titik_array[i], T);
+        //         array_hasil.push(temp);
+        //     }
 
-            return array_hasil;
-        }
+        //     return array_hasil;
+        // }
 
-        function rotasi_array(titik_array, titik_perputaran, sudut) {
-            var array_hasil = [];
+        // function rotasi_array(titik_array, titik_perputaran, sudut) {
+        //     var array_hasil = [];
 
-            for (var i = 0; i < titik_array.length; i++) {
-                var temp = rotasi_fix_point(titik_array[i], titik_perputaran, sudut);
-                array_hasil.push(temp);
-            }
+        //     for (var i = 0; i < titik_array.length; i++) {
+        //         var temp = rotasi_fix_point(titik_array[i], titik_perputaran, sudut);
+        //         array_hasil.push(temp);
+        //     }
 
-            return array_hasil;
-        }
+        //     return array_hasil;
+        // }
 
-        function skala_array(titik_array, titik_perputaran, S) {
-            var array_hasil = [];
+        // function skala_array(titik_array, titik_skalasi, S) {
+        //     var array_hasil = [];
 
-            for (var i = 0; i < titik_array.length; i++) {
-                var temp = skala_fix_point(titik_array[i], titik_perputaran, S);
-                array_hasil.push(temp);
-            }
+        //     for (var i = 0; i < titik_array.length; i++) {
+        //         var temp = skala_fix_point(titik_array[i], titik_skalasi, S);
+        //         array_hasil.push(temp);
+        //     }
 
-            return array_hasil;
-        }
+        //     return array_hasil;
+        // }
 
         // var segitiga_translasi_array = translasi_array(segitiga, {
         //     x: 100,
@@ -409,7 +523,7 @@
         //     x: 150,
         //     y: 200
         // }, Math.PI / 7)
-        // polygon(imageDataPratikum, segitiga_rotasi_array, 0, 0, 255);
+        // polygon(imageDataPratikum, segitiga_rotasi_array, 0, 255, 255);
 
         // var segitiga_skala_array = skala_array(segitiga, {
         //     x: 150,
@@ -419,6 +533,8 @@
         //     y: 2
         // })
         // polygon(imageDataPratikum, segitiga_skala_array, 0, 255, 0);
+
+
 
         ctx.putImageData(imageDataPratikum, 0, 0);
     </script>
